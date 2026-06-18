@@ -1,0 +1,30 @@
+# stage2_setup.py
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from datetime import datetime
+
+Base = declarative_base()
+
+class Student(Base):
+    __tablename__ = "students"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+
+    notifications = relationship("Notification", back_populates="student")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True)
+    studentID = Column(Integer, ForeignKey("students.id"), index=True)
+    message = Column(String, nullable=False)
+    isRead = Column(Boolean, default=False, index=True)
+    createdAt = Column(DateTime, default=datetime.utcnow, index=True)
+
+    student = relationship("Student", back_populates="notifications")
+
+# Database connection
+engine = create_engine("postgresql://username:yerrojuanjali@gmail.com@localhost/notifications_db")
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
+session = Session()
