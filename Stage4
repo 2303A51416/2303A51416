@@ -1,0 +1,26 @@
+# stage4_cache.py
+import redis
+from stage2_setup import session, Notification
+from sqlalchemy import desc
+
+# Redis connection
+r = redis.Redis(host='localhost', port=6379, db=0)
+
+def get_unread_notifications(student_id: int, limit: int = 20):
+    cache_key = f"unread:{student_id}"
+    cached = r.get(cache_key)
+    if cached:
+        print("Cache hit!")
+        return eval(cached)  # convert string back to list
+
+    print("Cache miss, querying DB...")
+    notifications = (
+        session.query(Notification)
+        .filter(Notification.studentID == student_id, Notification.isRead == False)
+        .order_by(desc(Notification.createdAt))
+        .limit(limit)
+        .all()
+    )
+    result = [{"id": n.id, "msg": n.message, "time": n.createdAt.isoformat()} for n in notifications]
+    r.setex(cache_key, 60, str(result))  # cache for 60 seconds
+    return result

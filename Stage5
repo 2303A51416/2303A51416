@@ -1,0 +1,29 @@
+# stage5_notify_all.py
+from celery import Celery
+from stage2_setup import session, Notification
+from datetime import datetime
+
+# Celery setup (using Redis as broker)
+app = Celery('notify', broker='redis://localhost:6379/0')
+
+@app.task(bind=True, max_retries=3)
+def send_notification(self, student_id, message):
+    try:
+        # Save to DB
+        notif = Notification(studentID=student_id, message=message, createdAt=datetime.utcnow())
+        session.add(notif)
+        session.commit()
+
+        # Send email (mock)
+        print(f"Email sent to {student_id}: {message}")
+
+        # Push to app (mock)
+        print(f"In-app notification pushed to {student_id}")
+
+    except Exception as e:
+        print(f"Error for {student_id}: {e}")
+        self.retry(exc=e, countdown=5)  # retry after 5s
+
+def notify_all(student_ids, message):
+    for sid in student_ids:
+        send_notification.delay(sid, message)  # async task

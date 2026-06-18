@@ -1,0 +1,49 @@
+# stage6_priority_inbox.py
+import heapq
+from datetime import datetime
+import requests
+
+# Define weights
+PRIORITY_MAP = {
+    "placement": 3,
+    "result": 2,
+    "event": 1
+}
+
+def fetch_notifications():
+    # Example API call (replace with actual Notification API endpoint)
+    response = requests.get("http://localhost:5000/notifications")
+    return response.json()  # Expected: list of dicts with keys: id, type, isRead, createdAt, message
+
+def get_priority_score(notification):
+    weight = PRIORITY_MAP.get(notification["type"], 0)
+    timestamp = datetime.fromisoformat(notification["createdAt"])
+    return (weight, timestamp)
+
+def get_top_notifications(notifications, n=10):
+    # Filter unread
+    unread = [n for n in notifications if not n["isRead"]]
+
+    # Build a max-heap based on weight and recency
+    heap = []
+    for notif in unread:
+        score = get_priority_score(notif)
+        # Use negative weight/timestamp for max-heap
+        heapq.heappush(heap, (-score[0], -score[1].timestamp(), notif))
+
+    # Extract top n
+    top = []
+    for _ in range(min(n, len(heap))):
+        _, _, notif = heapq.heappop(heap)
+        top.append(notif)
+    return top
+
+def main():
+    notifications = fetch_notifications()
+    top10 = get_top_notifications(notifications, 10)
+    print("Top 10 Priority Notifications:")
+    for n in top10:
+        print(f"[{n['type'].upper()}] {n['createdAt']} - {n['message']}")
+
+if __name__ == "__main__":
+    main()
