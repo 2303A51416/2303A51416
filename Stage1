@@ -1,0 +1,15 @@
+#Stage 1 - request body
+#logging middleware
+from flask import logging
+import json
+
+details = {
+    "name": "Anjali",
+    "age": 20,
+    "email": "yerrojuanjali@gmail.com",
+    "roll number": "2303A51416",
+    "mobile number": 9618024621
+}           
+json_details = json.dumps(details)
+print(json_details) 
+
